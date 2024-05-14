@@ -1,0 +1,151 @@
+task-1[movie recommendation system]
+Step 1: Setup the Django Project
+
+Install required packages:
+
+pip install django pandas numpy scikit-learn surprise 
+
+Create a new Django project and app:
+
+django-admin startproject movie_recommendation cd movie_recommendation django-admin startapp recommender
+
+Step 2: Create the Data Handling and Recommendation Logic
+
+Create a new Python script for handling the recommendation logic. Place this script inside the recommender app directory.
+
+recommender/recommendation.py
+import pandas as pd
+from surprise import Reader, Dataset, SVD
+from surprise.model_selection import train_test_split
+from surprise import accuracy
+import numpy as np
+
+# Load dataset
+def load_data():
+    # Replace 'path_to_your_csv' with the actual path to your dataset
+    df = pd.read_csv('path_to_your_csv')
+    return df
+
+# Preprocess data
+def preprocess_data(df):
+    df = df[['userId', 'movieId', 'rating']]
+    return df
+
+# Create user-item matrix
+def create_user_item_matrix(df):
+    user_item_matrix = df.pivot(index='userId', columns='movieId', values='rating')
+    return user_item_matrix
+
+# Train collaborative filtering model
+def train_model(df):
+    reader = Reader(rating_scale=(0.5, 5.0))
+    data = Dataset.load_from_df(df[['userId', 'movieId', 'rating']], reader)
+    trainset, testset = train_test_split(data, test_size=0.2)
+    algo = SVD()
+    algo.fit(trainset)
+    predictions = algo.test(testset)
+    accuracy.rmse(predictions)
+    return algo
+
+# Get top-n recommendations for a user
+def get_recommendations(algo, user_id, user_item_matrix, n=10):
+    user_ratings = user_item_matrix.loc[user_id].dropna()
+    all_movie_ids = user_item_matrix.columns
+    watched_movie_ids = user_ratings.index
+    unwatched_movie_ids = [movie_id for movie_id in all_movie_ids if movie_id not in watched_movie_ids]
+    predictions = [algo.predict(user_id, movie_id) for movie_id in unwatched_movie_ids]
+    recommendations = sorted(predictions, key=lambda x: x.est, reverse=True)[:n]
+    recommended_movie_ids = [pred.iid for pred in recommendations]
+    return recommended_movie_ids
+
+df = load_data()
+df = preprocess_data(df)
+user_item_matrix = create_user_item_matrix(df)
+algo = train_model(df)
+
+# Example: Get top 10 recommendations for user 1
+user_id = 1
+recommended_movie_ids = get_recommendations(algo, user_id, user_item_matrix, n=10)
+print(recommended_movie_ids)
+
+Step 3: Django Views and Templatesrecommender/views.py
+from django.shortcuts import render
+from .recommendation import load_data, preprocess_data, create_user_item_matrix, train_model, get_recommendations
+
+# Load and preprocess data
+df = load_data()
+df = preprocess_data(df)
+user_item_matrix = create_user_item_matrix(df)
+algo = train_model(df)
+
+def home(request):
+    return render(request, 'recommender/home.html')
+
+def recommend(request):
+    if request.method == 'POST':
+        user_id = int(request.POST['user_id'])
+        recommendations = get_recommendations(algo, user_id, user_item_matrix)
+        context = {'recommendations': recommendations, 'user_id': user_id}
+        return render(request, 'recommender/recommendations.html', context)
+    return render(request, 'recommender/home.html')
+recommender/urls.py
+
+from django.urls import path from . import views urlpatterns = [ path('', views.home, name='home'), path('recommend/', views.recommend, name='recommend'), ] 
+
+movie_recommendation/urls.py
+
+from django.contrib import admin from django.urls import path, include urlpatterns = [ path('admin/', admin.site.urls), path('', include('recommender.urls')), ]
+
+recommender/templates/recommender/home.html
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Movie Recommendation System</title>
+</head>
+<body>
+    <h1>Movie Recommendation System</h1>
+    <form method="post" action="{% url 'recommend' %}">
+        {% csrf_token %}
+        <label for="user_id">Enter User ID:</label>
+        <input type="number" id="user_id" name="user_id">
+        <button type="submit">Get Recommendations</button>
+    </form>
+</body>
+</html>
+recommender/templates/recommender/recommendations.html
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Movie Recommendations for User {{ user_id }}</title>
+</head>
+<body>
+    <h1>Recommendations for User {{ user_id }}</h1>
+    <ul>
+        {% for movie_id in recommendations %}
+            <li>Movie ID: {{ movie_id }}</li>
+        {% endfor %}
+    </ul>
+    <a href="{% url 'home' %}">Back</a>
+</body>
+</html>
+Step 4: Running the Django Application
+
+Apply migrations and run the server:
+
+python manage.py migrate python manage.py runserver 
+
+Open your browser and go to http://127.0.0.1:8000/ to interact with the movie recommendation system.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
