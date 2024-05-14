@@ -1,0 +1,243 @@
+HTML code(index.html)
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music Player</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="player">
+            <div class="library">
+                <h2>Music Library</h2>
+                <ul id="trackList"></ul>
+            </div>
+            <div class="controls">
+                <div class="current-track">
+                    <span id="currentTrackName">No track selected</span>
+                </div>
+                <div class="audio-controls">
+                    <button id="prevTrack">Prev</button>
+                    <button id="playPause">Play</button>
+                    <button id="nextTrack">Next</button>
+                    <button id="shuffle">Shuffle</button>
+                    <button id="repeat">Repeat</button>
+                </div>
+                <div class="progress">
+                    <span id="currentTime">0:00</span>
+                    <input type="range" id="progressBar" value="0">
+                    <span id="duration">0:00</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <audio id="audioPlayer"></audio>
+    <script src="scripts.js"></script>
+</body>
+</html>
+CSS code(style.css)
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f4;
+}
+
+.container {
+    max-width: 800px;
+    margin: 50px auto;
+    padding: 20px;
+    background-color: white;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.player {
+    display: flex;
+    flex-direction: column;
+}
+
+.library {
+    margin-bottom: 20px;
+}
+
+.library h2 {
+    margin-bottom: 10px;
+}
+
+.library ul {
+    list-style: none;
+    padding: 0;
+}
+
+.library ul li {
+    padding: 10px;
+    background-color: #f9f9f9;
+    margin-bottom: 5px;
+    cursor: pointer;
+}
+
+.library ul li:hover {
+    background-color: #e9e9e9;
+}
+
+.controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.current-track {
+    margin-bottom: 10px;
+}
+
+.audio-controls {
+    margin-bottom: 10px;
+}
+
+.audio-controls button {
+    margin: 0 5px;
+    padding: 10px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.audio-controls button:hover {
+    background-color: #0056b3;
+}
+
+.progress {
+    display: flex;
+    align-items: center;
+}
+
+.progress span {
+    margin: 0 10px;
+}
+
+#progressBar {
+    width: 100%;
+}
+JS code(script.js)
+document.addEventListener('DOMContentLoaded', function() {
+    const audioPlayer = document.getElementById('audioPlayer');
+    const trackListElement = document.getElementById('trackList');
+    const playPauseButton = document.getElementById('playPause');
+    const prevTrackButton = document.getElementById('prevTrack');
+    const nextTrackButton = document.getElementById('nextTrack');
+    const shuffleButton = document.getElementById('shuffle');
+    const repeatButton = document.getElementById('repeat');
+    const currentTrackName = document.getElementById('currentTrackName');
+    const progressBar = document.getElementById('progressBar');
+    const currentTimeElement = document.getElementById('currentTime');
+    const durationElement = document.getElementById('duration');
+
+    let tracks = [
+        { name: "Track 1", src: "path/to/track1.mp3" },
+        { name: "Track 2", src: "path/to/track2.mp3" },
+        { name: "Track 3", src: "path/to/track3.mp3" }
+    ];
+
+    let currentTrackIndex = 0;
+    let isPlaying = false;
+    let isShuffle = false;
+    let isRepeat = false;
+
+    function loadTrack(index) {
+        audioPlayer.src = tracks[index].src;
+        currentTrackName.textContent = tracks[index].name;
+    }
+
+    function playTrack() {
+        audioPlayer.play();
+        isPlaying = true;
+        playPauseButton.textContent = 'Pause';
+    }
+
+    function pauseTrack() {
+        audioPlayer.pause();
+        isPlaying = false;
+        playPauseButton.textContent = 'Play';
+    }
+
+    function nextTrack() {
+        if (isShuffle) {
+            currentTrackIndex = Math.floor(Math.random() * tracks.length);
+        } else {
+            currentTrackIndex = (currentTrackIndex + 1) % tracks.length;
+        }
+        loadTrack(currentTrackIndex);
+        playTrack();
+    }
+
+    function prevTrack() {
+        if (isShuffle) {
+            currentTrackIndex = Math.floor(Math.random() * tracks.length);
+        } else {
+            currentTrackIndex = (currentTrackIndex - 1 + tracks.length) % tracks.length;
+        }
+        loadTrack(currentTrackIndex);
+        playTrack();
+    }
+
+    function updateProgress() {
+        progressBar.value = (audioPlayer.currentTime / audioPlayer.duration) * 100;
+        currentTimeElement.textContent = formatTime(audioPlayer.currentTime);
+        durationElement.textContent = formatTime(audioPlayer.duration);
+    }
+
+    function formatTime(seconds) {
+        const minutes = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
+    }
+
+    playPauseButton.addEventListener('click', () => {
+        if (isPlaying) {
+            pauseTrack();
+        } else {
+            playTrack();
+        }
+    });
+
+    prevTrackButton.addEventListener('click', prevTrack);
+    nextTrackButton.addEventListener('click', nextTrack);
+
+    shuffleButton.addEventListener('click', () => {
+        isShuffle = !isShuffle;
+        shuffleButton.style.backgroundColor = isShuffle ? '#0056b3' : '#007bff';
+    });
+
+    repeatButton.addEventListener('click', () => {
+        isRepeat = !isRepeat;
+        repeatButton.style.backgroundColor = isRepeat ? '#0056b3' : '#007bff';
+        audioPlayer.loop = isRepeat;
+    });
+
+    audioPlayer.addEventListener('timeupdate', updateProgress);
+
+    progressBar.addEventListener('input', () => {
+        audioPlayer.currentTime = (progressBar.value / 100) * audioPlayer.duration;
+    });
+
+    audioPlayer.addEventListener('ended', nextTrack);
+
+    // Load track list
+    tracks.forEach((track, index) => {
+        const li = document.createElement('li');
+        li.textContent = track.name;
+        li.addEventListener('click', () => {
+            currentTrackIndex = index;
+            loadTrack(index);
+            playTrack();
+        });
+        trackListElement.appendChild(li);
+    });
+
+    // Load initial track
+    loadTrack(currentTrackIndex);
+});
